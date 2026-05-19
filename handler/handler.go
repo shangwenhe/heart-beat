@@ -50,7 +50,7 @@ func (h *Handler) GetStatus(w http.ResponseWriter, r *http.Request) {
 
 	online := false
 	if last != nil {
-		online = time.Since(last.ReceivedAt) < 2*time.Minute
+		online = time.Since(last.ReceivedAt) < 90*time.Second // 3个心跳周期(30s)未收到判定离线
 	}
 
 	w.Header().Set("Content-Type", "application/json")
