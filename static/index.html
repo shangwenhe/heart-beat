@@ -105,7 +105,7 @@
   .stat-value.offline{color:var(--offline)}
 
   /* ========== 贡献墙 ========== */
-  .wall-section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:24px}
+  .wall-section{ margin-bottom:24px}
 
   .wall-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
   .wall-title{font-size:14px;font-weight:600;color:var(--text-dim)}
@@ -113,7 +113,7 @@
 
   .wall-grid{
     display:grid;
-    grid-template-columns:36px repeat(24,1fr);
+    grid-template-columns: 21px repeat(24,1fr);
     grid-template-rows:repeat(12,1fr);
     gap:2px;
     margin-bottom:8px;
@@ -151,7 +151,7 @@
 
   .wall-col-labels{
     display:grid;
-    grid-template-columns:36px repeat(24,1fr);
+    grid-template-columns:21px repeat(24,1fr);
     gap:2px;
   }
   .wall-col-labels span{font-size:9px;color:var(--text-faint);text-align:center;font-variant-numeric:tabular-nums}
@@ -163,25 +163,6 @@
   .legend-dot.yellow{background:var(--cell-warn)}
   .legend-dot.red{background:var(--cell-off)}
   .legend-dot.gray{background:var(--legend-gray)}
-
-  /* 日志区 */
-  .log-section{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
-  .log-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
-  .log-title{font-size:14px;font-weight:600;color:var(--text-dim)}
-  .log-list{max-height:300px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--scrollbar) transparent}
-  .log-list::-webkit-scrollbar{width:4px}
-  .log-list::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
-  .log-item{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border);transition:background 0.15s}
-  .log-item:hover{background:var(--surface-hover)}
-  .log-item:last-child{border-bottom:none}
-  .log-dot{width:6px;height:6px;border-radius:50%;background:var(--online);margin-right:12px;flex-shrink:0}
-  .log-time{font-family:"SF Mono","Fira Code",monospace;font-size:13px;color:var(--text-dim)}
-  .log-ip{font-size:12px;color:var(--text-muted)}
-  .log-empty{text-align:center;padding:32px;color:var(--text-faint);font-size:13px}
-
-  .btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border-btn);background:var(--surface);color:var(--text-dim);cursor:pointer;font-size:12px;transition:all 0.2s;font-family:inherit}
-  .btn:hover{background:var(--surface-hover);color:var(--text)}
-  .btn:active{transform:scale(0.97)}
 
   .footer{text-align:center;margin-top:28px;font-size:11px;color:var(--text-deep)}
 </style>
@@ -230,17 +211,6 @@
       <div class="legend-item"><div class="legend-dot yellow"></div>有断电</div>
       <div class="legend-item"><div class="legend-dot red"></div>无心跳</div>
       <div class="legend-item"><div class="legend-dot gray"></div>未来</div>
-    </div>
-  </div>
-
-  <!-- 日志区 -->
-  <div class="log-section">
-    <div class="log-header">
-      <span class="log-title">心跳记录</span>
-      <button class="btn" onclick="loadLogs()">刷新</button>
-    </div>
-    <div id="log-list" class="log-list">
-      <div class="log-empty">加载中...</div>
     </div>
   </div>
 
@@ -345,7 +315,7 @@ function renderWall(slots) {
   for (let row = ROWS - 1; row >= 0; row--) {
     const label = document.createElement('div');
     label.className = 'wall-row-label';
-    label.textContent = ':' + pad(row * 5);
+    label.textContent = pad(row * 5);
     grid.appendChild(label);
 
     for (let col = 0; col < COLS; col++) {
@@ -387,22 +357,6 @@ function formatGap(seconds) {
   return s > 0 ? m + '分' + s + '秒' : m + '分钟';
 }
 
-/* ===== 日志 ===== */
-async function loadLogs() {
-  try {
-    const r = await fetch(API + '/api/heartbeats?limit=50');
-    const d = await r.json();
-    const list = document.getElementById('log-list');
-    if (!d.list || d.list.length === 0) {
-      list.innerHTML = '<div class="log-empty">暂无记录</div>';
-      return;
-    }
-    list.innerHTML = d.list.map(h =>
-      '<div class="log-item"><div style="display:flex;align-items:center"><div class="log-dot"></div><span class="log-time">' + formatTime(h.received_at) + '</span></div><span class="log-ip">' + h.source_ip + '</span></div>'
-    ).join('');
-  } catch(e) { console.error(e); }
-}
-
 function formatTime(s) {
   const d = new Date(s);
   return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
@@ -410,10 +364,9 @@ function formatTime(s) {
 function pad(n) { return String(n).padStart(2, '0'); }
 
 /* ===== 初始化 ===== */
-loadStatus(); loadTimeline(); loadLogs();
+loadStatus(); loadTimeline();
 setInterval(loadStatus, 10000);
 setInterval(loadTimeline, 60000);
-setInterval(loadLogs, 30000);
 setInterval(updateElapsed, 1000);
 </script>
 </body>
