@@ -288,8 +288,8 @@ function renderWall(slots) {
   const colLabels = document.getElementById('wall-col-labels');
   grid.innerHTML = '';
 
-  for (let row = 0; row < ROWS; row++) {
-    // 行标签: :00, :05, :10, ...
+  for (let row = ROWS - 1; row >= 0; row--) {
+    // 行标签: :55, :50, :45, ... :00 (从上到下)
     const label = document.createElement('div');
     label.className = 'wall-row-label';
     label.textContent = ':' + pad(row * 5);
