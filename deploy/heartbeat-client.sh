@@ -1,6 +1,6 @@
 #!/bin/bash
 # 心跳客户端 - 每30秒向服务端发送一次心跳
-# Usage: 修改 SERVER_URL 为你的腾讯云服务器地址
+# Usage: make client SERVER_URL=http://your-server:51502
 
 SERVER_URL="http://127.0.0.1:51502/api/heartbeat"
 INTERVAL=30

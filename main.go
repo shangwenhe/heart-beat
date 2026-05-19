@@ -20,7 +20,7 @@ import (
 var staticFiles embed.FS
 
 func main() {
-	listen := envOrDefault("LISTEN", ":8080")
+	listen := envOrDefault("LISTEN", ":51502")
 	dbPath := envOrDefault("DB_PATH", "heartbeat.db")
 	alertProvider := envOrDefault("ALERT_PROVIDER", "")    // "pushplus" or "serverchan"
 	alertWebhook := envOrDefault("ALERT_WEBHOOK", "")       // token or sendkey

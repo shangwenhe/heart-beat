@@ -1,0 +1,18 @@
+[Unit]
+Description=Heartbeat Server - 家里有电检测服务端
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/heart-beat
+Environment=LISTEN=:51502
+Environment=DB_PATH=/var/lib/heartbeat/heartbeat.db
+# 微信告警（取消注释并填入你的token）
+# Environment=ALERT_PROVIDER=pushplus
+# Environment=ALERT_WEBHOOK=your_token
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
