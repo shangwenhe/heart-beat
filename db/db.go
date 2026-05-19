@@ -117,11 +117,11 @@ const totalSlots = 24 * slotsPerHour   // 288
 //   - yellow/warning: has heartbeat, max_gap > 90s (short outage within slot)
 //   - red/offline:   no heartbeat at all (at least 5-min outage)
 func (db *DB) Timeline(date string) ([]TimelineSlot, error) {
-	t, err := time.Parse("2006-01-02", date)
+	t, err := time.ParseInLocation("2006-01-02", date, time.Local)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format: %w", err)
 	}
-	loc := t.Location()
+	loc := time.Local
 	startOfDay := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, loc)
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
