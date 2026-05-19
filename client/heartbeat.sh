@@ -2,7 +2,7 @@
 # 心跳客户端 - 每30秒向服务端发送一次心跳
 # Usage: 修改 SERVER_URL 为你的腾讯云服务器地址
 
-SERVER_URL="http://127.0.0.1:51502/api/heartbeat"
+SERVER_URL="http://101.43.223.61:51502/api/heartbeat"
 INTERVAL=30
 
 echo "heart-beat client started, target: $SERVER_URL"
