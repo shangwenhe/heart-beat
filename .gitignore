@@ -1,1 +1,4 @@
 heartbeat.db
+heartbeat.db-shm
+heartbeat.db-wal
+heart-beat
