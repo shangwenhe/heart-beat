@@ -12,7 +12,7 @@
   .bg-glow.online{background:#10b981}
   .bg-glow.offline{background:#ef4444}
 
-  .container{max-width:720px;margin:0 auto;padding:40px 20px;position:relative;z-index:1}
+  .container{max-width:820px;margin:0 auto;padding:40px 20px;position:relative;z-index:1}
 
   .header{text-align:center;margin-bottom:36px}
   .header h1{font-size:22px;font-weight:600;color:#f1f5f9;letter-spacing:0.5px}
@@ -66,23 +66,25 @@
   .wall-title{font-size:14px;font-weight:600;color:#94a3b8}
   .wall-date{font-size:13px;color:#64748b;font-variant-numeric:tabular-nums}
 
+  /* 核心网格: 12行 × 24列 + 左侧行标签列 */
   .wall-grid{
     display:grid;
-    grid-template-columns:40px repeat(6, 1fr);
-    grid-template-rows:repeat(8, 1fr);
-    gap:3px;
-    margin-bottom:12px;
+    grid-template-columns:36px repeat(24,1fr);
+    grid-template-rows:repeat(12,1fr);
+    gap:2px;
+    margin-bottom:8px;
   }
 
-  /* 行标签 (0:00, 3:00, ...) */
+  /* 行标签 (:00, :05, :10 ...) */
   .wall-row-label{
-    font-size:10px;color:#475569;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;
+    font-size:9px;color:#475569;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;
     font-variant-numeric:tabular-nums;
   }
 
-  /* 每个格子 */
+  /* 格子 */
   .wall-cell{
-    aspect-ratio:1;border-radius:3px;transition:all 0.15s;cursor:pointer;position:relative;
+    border-radius:2px;transition:all 0.15s;cursor:pointer;position:relative;
+    min-width:0;min-height:0;
   }
   .wall-cell.online{background:#16a34a}
   .wall-cell.online:hover{background:#22c55e}
@@ -106,12 +108,16 @@
   }
   .wall-cell:hover .tip{display:block}
 
-  /* 列标签 (底部) */
-  .wall-col-labels{display:grid;grid-template-columns:40px repeat(6,1fr);gap:3px}
-  .wall-col-labels span{font-size:10px;color:#475569;text-align:center;font-variant-numeric:tabular-nums}
+  /* 列标签 (底部小时) */
+  .wall-col-labels{
+    display:grid;
+    grid-template-columns:36px repeat(24,1fr);
+    gap:2px;
+  }
+  .wall-col-labels span{font-size:9px;color:#475569;text-align:center;font-variant-numeric:tabular-nums}
 
   /* 图例 */
-  .wall-legend{display:flex;align-items:center;gap:16px;margin-top:14px;justify-content:center}
+  .wall-legend{display:flex;align-items:center;gap:16px;margin-top:14px;justify-content:center;flex-wrap:wrap}
   .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b}
   .legend-dot{width:10px;height:10px;border-radius:2px}
   .legend-dot.green{background:#16a34a}
@@ -181,8 +187,8 @@
     <div id="wall-col-labels" class="wall-col-labels"></div>
     <div class="wall-legend">
       <div class="legend-item"><div class="legend-dot green"></div>正常</div>
-      <div class="legend-item"><div class="legend-dot yellow"></div>短电断 &lt;15min</div>
-      <div class="legend-item"><div class="legend-dot red"></div>长电断 ≥15min</div>
+      <div class="legend-item"><div class="legend-dot yellow"></div>有断电</div>
+      <div class="legend-item"><div class="legend-dot red"></div>无心跳</div>
       <div class="legend-item"><div class="legend-dot gray"></div>未来</div>
     </div>
   </div>
@@ -198,7 +204,7 @@
     </div>
   </div>
 
-  <div class="footer">心跳间隔 30s · 离线阈值 90s · 采样粒度 30min</div>
+  <div class="footer">心跳间隔 30s · 离线阈值 90s · 采样粒度 5min</div>
 </div>
 
 <script>
@@ -262,8 +268,8 @@ function updateElapsed() {
 }
 
 /* ===== 贡献墙 ===== */
-// 48 slots → 8 rows × 6 cols (每格30分钟，每行3小时)
-const ROWS = 8, COLS = 6;
+// 288 slots: 12 rows (5min each) × 24 cols (hours)
+const ROWS = 12, COLS = 24;
 
 async function loadTimeline() {
   try {
@@ -283,27 +289,30 @@ function renderWall(slots) {
   grid.innerHTML = '';
 
   for (let row = 0; row < ROWS; row++) {
-    // 行标签: 0:00, 3:00, 6:00, ...
+    // 行标签: :00, :05, :10, ...
     const label = document.createElement('div');
     label.className = 'wall-row-label';
-    label.textContent = pad(row * 3) + ':00';
+    label.textContent = ':' + pad(row * 5);
     grid.appendChild(label);
 
     for (let col = 0; col < COLS; col++) {
-      const slotIdx = row * COLS + col;
-      const slot = slots ? slots[slotIdx] : null;
+      // slots 数组下标: hour*12 + row
+      const idx = col * 12 + row;
+      const slot = slots ? slots[idx] : null;
       const cell = document.createElement('div');
       cell.className = 'wall-cell ' + (slot ? slot.status : 'future');
 
       if (slot) {
-        const timeLabel = pad(slot.hour) + ':' + pad(slot.minute) + ' - ' + pad(slot.hour + (slot.minute + 30 >= 60 ? 1 : 0)) + ':' + pad((slot.minute + 30) % 60);
-        let statusLabel = {online:'正常',warning:'短电断',offline:'长电断',future:'未来'}[slot.status] || slot.status;
+        const endMin = slot.minute + 5;
+        const endHour = slot.hour + Math.floor(endMin / 60);
+        const timeLabel = pad(slot.hour) + ':' + pad(slot.minute) + '-' + pad(endHour) + ':' + pad(endMin % 60);
+        let statusLabel = {online:'正常',warning:'有断电',offline:'无心跳',future:'未来'}[slot.status] || slot.status;
         let info = statusLabel;
         if (slot.status === 'warning' || slot.status === 'offline') {
           info += ' · 最大断电 ' + formatGap(slot.max_gap);
         }
         if (slot.count > 0) {
-          info += ' · ' + slot.count + '次心跳';
+          info += ' · ' + slot.count + '次';
         }
         cell.innerHTML = '<div class="tip"><div style="font-weight:600;margin-bottom:2px">' + timeLabel + '</div>' + info + '</div>';
       }
@@ -312,12 +321,11 @@ function renderWall(slots) {
     }
   }
 
-  // 列标签: :00, :30 交替
+  // 列标签: 0, 1, 2, ... 23
   colLabels.innerHTML = '<span></span>';
   for (let col = 0; col < COLS; col++) {
     const span = document.createElement('span');
-    const slot0 = slots ? slots[col] : null;
-    if (slot0) span.textContent = pad(slot0.hour) + ':' + pad(slot0.minute);
+    span.textContent = col;
     colLabels.appendChild(span);
   }
 }

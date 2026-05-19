@@ -96,21 +96,26 @@ func (db *DB) ListHeartbeats(limit, offset int) ([]Heartbeat, error) {
 	return list, rows.Err()
 }
 
-// TimelineSlot represents a 30-minute aggregated slot.
+// TimelineSlot represents a 5-minute aggregated slot.
 type TimelineSlot struct {
-	SlotIndex int    `json:"slot"`  // 0-47 (0=00:00, 1=00:30, ..., 47=23:30)
-	Hour      int    `json:"hour"`
-	Minute    int    `json:"minute"`
-	Count     int    `json:"count"` // heartbeat count in this slot
-	MaxGap    int    `json:"max_gap"` // max seconds without heartbeat in this slot
-	Status    string `json:"status"` // "online", "warning", "offline", "future"
+	Hour   int    `json:"hour"`    // 0-23
+	Minute int    `json:"minute"`  // 0,5,10,...,55
+	Count  int    `json:"count"`   // heartbeat count in this slot
+	MaxGap int    `json:"max_gap"` // max seconds without heartbeat in this slot
+	Status string `json:"status"` // "online", "warning", "offline", "future"
 }
 
-// Timeline returns 48 slots (30-min each) for a given date (format: "2006-01-02").
+const slotMinutes = 5
+const slotsPerHour = 60 / slotMinutes // 12
+const totalSlots = 24 * slotsPerHour   // 288
+
+// Timeline returns 288 slots (5-min each) for a given date (format: "2006-01-02").
+// Arranged as 24 columns (hours) × 12 rows (5-min intervals within each hour).
+//
 // Status logic:
-//   - green/online:  no gap > 90s (all heartbeats present)
-//   - yellow/warning: gap > 90s but < 15min (short outage)
-//   - red/offline:   gap >= 15min (long outage) or no heartbeat at all
+//   - green/online:  has heartbeat, max_gap <= 90s
+//   - yellow/warning: has heartbeat, max_gap > 90s (short outage within slot)
+//   - red/offline:   no heartbeat at all (at least 5-min outage)
 func (db *DB) Timeline(date string) ([]TimelineSlot, error) {
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -129,17 +134,19 @@ func (db *DB) Timeline(date string) ([]TimelineSlot, error) {
 	}
 	defer rows.Close()
 
-	// Collect timestamps per slot
-	slotTimes := make([][]time.Time, 48)
+	// Collect timestamps per slot [hour][row]
+	slotTimes := make([][]time.Time, totalSlots)
 	for rows.Next() {
 		var ts int64
 		if err := rows.Scan(&ts); err != nil {
 			return nil, err
 		}
 		tt := time.Unix(ts, 0).In(loc)
-		slot := (tt.Hour()*60 + tt.Minute()) / 30
-		if slot >= 0 && slot < 48 {
-			slotTimes[slot] = append(slotTimes[slot], tt)
+		hour := tt.Hour()
+		row := tt.Minute() / slotMinutes
+		idx := hour*slotsPerHour + row
+		if idx >= 0 && idx < totalSlots {
+			slotTimes[idx] = append(slotTimes[idx], tt)
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -147,17 +154,16 @@ func (db *DB) Timeline(date string) ([]TimelineSlot, error) {
 	}
 
 	now := time.Now()
-	slots := make([]TimelineSlot, 48)
-	for i := 0; i < 48; i++ {
-		hour := (i * 30) / 60
-		minute := (i * 30) % 60
-		slotStart := startOfDay.Add(time.Duration(i*30) * time.Minute)
+	slots := make([]TimelineSlot, totalSlots)
+	for i := 0; i < totalSlots; i++ {
+		hour := i / slotsPerHour
+		minute := (i % slotsPerHour) * slotMinutes
+		slotStart := startOfDay.Add(time.Duration(i*slotMinutes) * time.Minute)
 
 		slots[i] = TimelineSlot{
-			SlotIndex: i,
-			Hour:      hour,
-			Minute:    minute,
-			Count:     len(slotTimes[i]),
+			Hour:   hour,
+			Minute: minute,
+			Count:  len(slotTimes[i]),
 		}
 
 		// Future slot
@@ -166,30 +172,24 @@ func (db *DB) Timeline(date string) ([]TimelineSlot, error) {
 			continue
 		}
 
-		// No heartbeat at all → offline (red)
+		// No heartbeat → offline (red)
 		if len(slotTimes[i]) == 0 {
-			slots[i].MaxGap = 30 * 60 // entire 30-min slot is a gap
+			slots[i].MaxGap = slotMinutes * 60
 			slots[i].Status = "offline"
 			continue
 		}
 
 		// Compute max gap within this slot
 		maxGap := 0.0
-
-		// Gap from slot start to first heartbeat
 		if g := slotTimes[i][0].Sub(slotStart).Seconds(); g > maxGap {
 			maxGap = g
 		}
-
-		// Gap between consecutive heartbeats
 		for j := 1; j < len(slotTimes[i]); j++ {
 			if g := slotTimes[i][j].Sub(slotTimes[i][j-1]).Seconds(); g > maxGap {
 				maxGap = g
 			}
 		}
-
-		// Gap from last heartbeat to slot end (or now, whichever is earlier)
-		slotEnd := slotStart.Add(30 * time.Minute)
+		slotEnd := slotStart.Add(time.Duration(slotMinutes) * time.Minute)
 		boundary := now
 		if slotEnd.Before(now) {
 			boundary = slotEnd
@@ -199,15 +199,11 @@ func (db *DB) Timeline(date string) ([]TimelineSlot, error) {
 		}
 
 		slots[i].MaxGap = int(maxGap)
-
-		// Determine status by max gap
 		switch {
-		case maxGap >= 15*60:
-			slots[i].Status = "offline" // red: outage >= 15min
 		case maxGap > 90:
-			slots[i].Status = "warning" // yellow: short outage
+			slots[i].Status = "warning"
 		default:
-			slots[i].Status = "online" // green: all good
+			slots[i].Status = "online"
 		}
 	}
 
