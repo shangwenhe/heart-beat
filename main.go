@@ -37,6 +37,7 @@ func main() {
 	mux.HandleFunc("POST /api/heartbeat", h.PostHeartbeat)
 	mux.HandleFunc("GET /api/status", h.GetStatus)
 	mux.HandleFunc("GET /api/heartbeats", h.GetHeartbeats)
+	mux.HandleFunc("GET /api/timeline", h.GetTimeline)
 
 	// Static files
 	staticFS, err := fs.Sub(staticFiles, "static")

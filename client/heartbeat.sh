@@ -3,7 +3,7 @@
 # Usage: 修改 SERVER_URL 为你的腾讯云服务器地址
 
 SERVER_URL="http://127.0.0.1:8080/api/heartbeat"
-INTERVAL=5
+INTERVAL=30
 
 echo "heart-beat client started, target: $SERVER_URL"
 

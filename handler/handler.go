@@ -80,3 +80,22 @@ func (h *Handler) GetHeartbeats(w http.ResponseWriter, r *http.Request) {
 		"count": len(list),
 	})
 }
+
+func (h *Handler) GetTimeline(w http.ResponseWriter, r *http.Request) {
+	date := r.URL.Query().Get("date")
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+
+	slots, err := h.db.Timeline(date)
+	if err != nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"date":  date,
+		"slots": slots,
+	})
+}
