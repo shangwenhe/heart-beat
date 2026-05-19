@@ -28,12 +28,22 @@ func Open(path string) (*DB, error) {
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		return nil, fmt.Errorf("set wal mode: %w", err)
 	}
+	// Auto-checkpoint every 1000 frames to keep WAL file small
+	if _, err := db.Exec("PRAGMA wal_autocheckpoint=1000"); err != nil {
+		return nil, fmt.Errorf("set wal autocheckpoint: %w", err)
+	}
 
 	if err := migrate(db); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 
 	return &DB{db}, nil
+}
+
+// Close truncates WAL and shuts down cleanly.
+func (db *DB) Close() error {
+	db.Exec("PRAGMA wal_checkpoint(TRUNCATE)")
+	return db.DB.Close()
 }
 
 func migrate(db *sql.DB) error {

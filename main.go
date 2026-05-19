@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"heart-beat/alert"
@@ -27,7 +29,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
-	defer database.Close()
 
 	h := handler.New(database)
 
@@ -76,7 +77,23 @@ func main() {
 	}()
 
 	fmt.Printf("heart-beat server listening on %s\n", listen)
-	log.Fatal(http.ListenAndServe(listen, mux))
+
+	// Graceful shutdown on SIGINT/SIGTERM
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	server := &http.Server{Addr: listen, Handler: mux}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	<-quit
+	fmt.Println("\nshutting down...")
+	server.Close() // stop accepting new connections
+	database.Close() // checkpoint WAL and close
+	fmt.Println("stopped")
 }
 
 func envOrDefault(key, fallback string) string {
