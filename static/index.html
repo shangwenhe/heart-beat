@@ -86,6 +86,17 @@
 
   .status-meta{font-size:11px;color:var(--meta-color)}
 
+  .heartbeat-bar{display:flex;align-items:center;gap:2px;height:14px}
+  .heartbeat-bar span{width:2px;border-radius:1px;background:var(--bar-dim);transition:all 0.3s}
+  .heartbeat-bar.online span{background:var(--online)}
+  .heartbeat-bar.offline span{background:var(--offline)}
+  @keyframes beat{0%,40%,100%{height:4px;opacity:0.3}10%{height:14px;opacity:1}}
+  .heartbeat-bar.active span{animation:beat 1.2s ease-in-out infinite}
+  .heartbeat-bar.active span:nth-child(2){animation-delay:0.1s}
+  .heartbeat-bar.active span:nth-child(3){animation-delay:0.2s}
+  .heartbeat-bar.active span:nth-child(4){animation-delay:0.3s}
+  .heartbeat-bar.active span:nth-child(5){animation-delay:0.4s}
+
   /* 统计卡片 */
   .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
   .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px}
@@ -169,8 +180,13 @@
   <!-- 状态卡片 -->
   <div id="status-card" class="status-card offline">
     <div id="status-icon" class="status-icon offline">⚡</div>
-    <div>
-      <div id="status-text" class="status-text offline">检测中...</div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="status-text" class="status-text offline">检测中...</div>
+        <div id="heartbeat-bar" class="heartbeat-bar">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
       <div id="status-meta" class="status-meta">正在获取心跳状态</div>
     </div>
   </div>
@@ -234,6 +250,7 @@ async function loadStatus() {
     const icon = document.getElementById('status-icon');
     const text = document.getElementById('status-text');
     const meta = document.getElementById('status-meta');
+    const bar = document.getElementById('heartbeat-bar');
     const glow = document.getElementById('bg-glow');
     const statLast = document.getElementById('stat-last');
 
@@ -242,6 +259,7 @@ async function loadStatus() {
     icon.className = 'status-icon ' + (on ? 'online' : 'offline');
     icon.textContent = on ? '⚡' : '🔌';
     text.className = 'status-text ' + (on ? 'online' : 'offline');
+    bar.className = 'heartbeat-bar ' + (on ? 'active online' : 'offline');
     glow.className = 'bg-glow ' + (on ? 'online' : 'offline');
 
     if (on) {
