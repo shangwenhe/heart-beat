@@ -550,7 +550,7 @@ async function addActivity(dayKey, time, who, text) {
     startTime: formatDateTimeLocal(start),
     endTime: formatDateTimeLocal(end),
     childId: childId,
-    isRecurring: recurringInput.checked
+    isRecurring: document.getElementById('af-recurring-chk')?.checked ?? true
   };
 
   try {
