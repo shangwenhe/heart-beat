@@ -480,11 +480,27 @@
 
   /* Print */
   @media print {
-    body { padding: 0; background: white; }
-    header, .hint { display: none; }
-    .calendar-section { display: block; box-shadow: none; }
-    .cal-panel, .cal-detail-panel { box-shadow: none; border: 1px solid var(--border); page-break-inside: avoid; }
-    .cal-panel { margin-bottom: 10px; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { padding: 0; background: white !important; }
+    header { display: flex !important; margin-bottom: 10px; }
+    header h1 { font-size: 20px; color: #1f2937 !important; background: none !important; -webkit-background-clip: unset !important; background-clip: unset !important; }
+    .hint, .cal-detail-add-btn, .slot-del, .cal-header button,
+    button.cal-nav, #chip-a, #chip-b { display: none !important; }
+    .calendar-section { grid-template-columns: 1fr; gap: 12px; }
+    .cal-panel {
+      box-shadow: none !important; border: 1px solid #ddd; border-radius: 8px;
+      page-break-inside: avoid; padding: 12px;
+    }
+    .cal-detail-panel {
+      box-shadow: none !important; border: 1px solid #ddd; border-radius: 8px;
+      page-break-inside: avoid; padding: 12px; background: white !important;
+    }
+    .cal-cell { border: 1px solid #eee; }
+    .cal-cell.today { background: #fef3c7 !important; color: #92400e !important; font-weight: 700; }
+    .cal-cell.selected { background: #fed7aa !important; color: #9a3412 !important; }
+    .cal-cell.muted { color: #d1d5db; }
+    .entry { box-shadow: none; }
+    .cal-slot { border-bottom: 1px solid #f0f0f0; }
     @page { size: A4 portrait; margin: 10mm; }
   }
 </style>
