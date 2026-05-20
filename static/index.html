@@ -775,7 +775,8 @@ function renderCalDetail() {
       c.className = 'cal-slot-entries';
       const span = document.createElement('span');
       span.className = `entry ${whoClass(a.childId)}`;
-      span.textContent = a.title;
+      const childName = a.child ? a.child.name : (whoClass(a.childId) === 'a' ? state.names.a : state.names.b);
+      span.textContent = `${childName} · ${a.title}`;
       c.appendChild(span);
       if (a.isRecurring) {
         const tag = document.createElement('span');
