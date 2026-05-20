@@ -185,7 +185,23 @@
     margin: 0 0 12px 0;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
+  .cal-detail-add-btn {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    background: none;
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    padding: 4px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .cal-detail-add-btn:hover { background: var(--accent); color: white; }
   .cal-detail-title .badge {
     font-size: 11px;
     color: var(--muted);
@@ -238,6 +254,9 @@
     border-radius: 999px;
     border: 1px solid #fed7aa;
     white-space: nowrap;
+        display: flex;
+    justify-content: center;
+    align-items: center;
   }
   .slot-del {
     flex: 0 0 auto;
@@ -258,37 +277,23 @@
     color: var(--muted);
     font-size: 13px;
   }
-  .add-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-    align-items: center;
+  /* Add Activity Modal form */
+  .add-modal-form { display: flex; flex-direction: column; gap: 14px; }
+  .add-modal-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .add-modal-row label { font-size: 13px; color: var(--text); font-weight: 500; min-width: 48px; }
+  .add-modal-row input[type="text"],
+  .add-modal-row select {
+    flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; outline: none; background: white;
+    transition: border-color 0.15s;
   }
-  .add-form input, .add-form select {
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 13px;
-    font-family: inherit;
-    background: white;
+  .add-modal-row input[type="text"]:focus,
+  .add-modal-row select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.18); }
+  .add-modal-recurring {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; color: var(--text); cursor: pointer; user-select: none;
   }
-  .af-who { flex: 0 0 88px; cursor: pointer; }
-  .af-recurring {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--text);
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-  }
-  .af-recurring input { cursor: pointer; accent-color: var(--accent); }
-  .af-text { flex: 1; min-width: 120px; }
-  .af-add { flex: 0 0 auto; }
+  .add-modal-recurring input { cursor: pointer; accent-color: var(--accent); }
 
   /* Custom time picker */
   .time-picker { position: relative; flex: 0 0 auto; }
@@ -467,7 +472,7 @@
     .cal-panel, .cal-detail-panel { padding: 12px 14px; }
   }
   @media (max-width: 480px) {
-    .af-text { flex-basis: 100%; order: 3; }
+    /* removed: af-text mobile rule — add form now in modal */
   }
   @media (hover: none) {
     .slot-del { opacity: 0.6; }
@@ -521,7 +526,7 @@
   <div class="cal-detail-panel" id="cal-detail"></div>
 </section>
 
-<p class="hint">点日期看当日安排 · 在右侧添加活动</p>
+<p class="hint">点日期看当日安排 · 点击 + 添加 活动</p>
 
 <div class="modal-bg" id="renameModal">
   <div class="modal">
@@ -530,6 +535,33 @@
     <div class="modal-footer">
       <button onclick="closeRenameModal()">取消</button>
       <button class="primary" onclick="confirmRename()">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="addModal">
+  <div class="modal" style="width:400px;">
+    <h3 id="addModalTitle">添加活动</h3>
+    <div class="add-modal-form">
+      <div class="add-modal-row">
+        <label>时间</label>
+        <div id="addModalTimeWrap"></div>
+      </div>
+      <div class="add-modal-row">
+        <label>谁</label>
+        <select id="amWho"></select>
+        <label class="add-modal-recurring">
+          <input type="checkbox" id="amRecurring" checked> 每周
+        </label>
+      </div>
+      <div class="add-modal-row">
+        <label>内容</label>
+        <input type="text" id="amText" placeholder="数学 / 钢琴课 / 游泳…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeAddModal()">取消</button>
+      <button class="primary" onclick="confirmAddActivity()">添加</button>
     </div>
   </div>
 </div>
@@ -580,7 +612,7 @@ function whoClass(childId) {
   return childMap[childId] || 'a';
 }
 
-async function addActivity(dayKey, time, who, text) {
+async function addActivity(dayKey, time, who, text, isRecurring) {
   // Map who back to child ID
   let childId;
   if (who === 'both') {
@@ -602,7 +634,7 @@ async function addActivity(dayKey, time, who, text) {
     startTime: formatDateTimeLocal(start),
     endTime: formatDateTimeLocal(end),
     childId: childId,
-    isRecurring: document.getElementById('af-recurring-chk')?.checked ?? true
+    isRecurring: isRecurring !== undefined ? isRecurring : true
   };
 
   try {
@@ -749,7 +781,7 @@ function renderCalDetail() {
 
   const title = document.createElement('div');
   title.className = 'cal-detail-title';
-  title.innerHTML = `${dateStr} · ${DAY_LABELS[dayKey]} <span class="badge">点击×可删除</span>`;
+  title.innerHTML = `${dateStr} · ${DAY_LABELS[dayKey]}<button class="cal-detail-add-btn" onclick="openAddModal()">+ 添加</button>`;
   detail.appendChild(title);
 
   const list = getActivitiesForDate(d);
@@ -760,7 +792,6 @@ function renderCalDetail() {
     empty.textContent = '这一天还没有活动';
     detail.appendChild(empty);
   } else {
-    // Sort by start time
     list.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
     list.forEach(a => {
       const row = document.createElement('div');
@@ -797,54 +828,6 @@ function renderCalDetail() {
       detail.appendChild(row);
     });
   }
-
-  const form = document.createElement('div');
-  form.className = 'add-form';
-  detail.appendChild(form);
-
-  const picker = createTimePicker();
-  form.appendChild(picker.el);
-
-  const recurringLabel = document.createElement('label');
-  recurringLabel.className = 'af-recurring';
-  const recurringInput = document.createElement('input');
-  recurringInput.type = 'checkbox';
-  recurringInput.checked = true;
-  recurringInput.id = 'af-recurring-chk';
-  const recurringText = document.createTextNode('每周');
-  recurringLabel.appendChild(recurringInput);
-  recurringLabel.appendChild(recurringText);
-  form.appendChild(recurringLabel);
-
-  const whoInput = document.createElement('select');
-  whoInput.className = 'af-who';
-  whoInput.innerHTML = `
-    <option value="a">${state.names.a}</option>
-    <option value="b">${state.names.b}</option>
-    <option value="both">共同</option>`;
-  form.appendChild(whoInput);
-
-  const textInput = document.createElement('input');
-  textInput.type = 'text';
-  textInput.className = 'af-text';
-  textInput.placeholder = '活动内容，如：数学 / 钢琴课';
-  form.appendChild(textInput);
-
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'primary af-add';
-  addBtn.textContent = '+ 添加';
-  form.appendChild(addBtn);
-
-  function doAdd() {
-    const text = textInput.value.trim();
-    if (!text) { textInput.focus(); return; }
-    addActivity(dayKey, picker.getValue(), whoInput.value, text);
-  }
-  addBtn.addEventListener('click', doAdd);
-  textInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); doAdd(); }
-  });
 }
 
 // ---- Time Picker ----
@@ -996,6 +979,58 @@ document.getElementById('renameInput').addEventListener('keydown', e => {
 
 document.getElementById('chip-a').addEventListener('click', () => openRenameModal('a'));
 document.getElementById('chip-b').addEventListener('click', () => openRenameModal('b'));
+
+// ---- Add Activity Modal ----
+let addModalPicker = null;
+
+function openAddModal() {
+  const d = calSelected;
+  const dow = d.getDay();
+  const dayKey = WEEKDAY_KEY[dow];
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('addModalTitle').textContent = `添加活动 · ${dateStr} ${DAY_LABELS[dayKey]}`;
+
+  // Populate who select
+  const whoSel = document.getElementById('amWho');
+  whoSel.innerHTML = `<option value="a">${state.names.a}</option><option value="b">${state.names.b}</option><option value="both">共同</option>`;
+
+  // Reset form
+  document.getElementById('amRecurring').checked = true;
+  document.getElementById('amText').value = '';
+
+  // Create time picker
+  const wrap = document.getElementById('addModalTimeWrap');
+  wrap.innerHTML = '';
+  addModalPicker = createTimePicker();
+  wrap.appendChild(addModalPicker.el);
+
+  document.getElementById('addModal').classList.add('show');
+  setTimeout(() => document.getElementById('amText').focus(), 50);
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').classList.remove('show');
+  addModalPicker = null;
+}
+
+function confirmAddActivity() {
+  const text = document.getElementById('amText').value.trim();
+  if (!text) { document.getElementById('amText').focus(); return; }
+  const d = calSelected;
+  const dow = d.getDay();
+  const dayKey = WEEKDAY_KEY[dow];
+  const time = addModalPicker ? addModalPicker.getValue() : '';
+  const who = document.getElementById('amWho').value;
+  const isRecurring = document.getElementById('amRecurring').checked;
+
+  addActivity(dayKey, time, who, text, isRecurring);
+  closeAddModal();
+}
+
+document.getElementById('amText').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); confirmAddActivity(); }
+  if (e.key === 'Escape') closeAddModal();
+});
 
 loadData();
 </script>
