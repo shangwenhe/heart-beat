@@ -582,6 +582,17 @@
   </div>
 </div>
 
+<div class="modal-bg" id="deleteModal">
+  <div class="modal" style="width:340px;">
+    <h3 id="deleteModalTitle">确认删除</h3>
+    <p id="deleteModalMsg" style="margin:0 0 4px;font-size:14px;color:var(--text);"></p>
+    <div class="modal-footer">
+      <button onclick="closeDeleteModal()">取消</button>
+      <button style="background:#ef4444;border-color:#ef4444;color:white;" onclick="confirmDelete()">删除</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -676,6 +687,25 @@ async function removeActivity(id) {
   } catch (e) {
     showToast('删除失败: ' + e.message);
   }
+}
+
+// ---- Delete Confirmation Modal ----
+let deleteTargetId = null;
+
+function openDeleteModal(id, label) {
+  deleteTargetId = id;
+  document.getElementById('deleteModalMsg').textContent = `确定删除「${label}」吗？`;
+  document.getElementById('deleteModal').classList.add('show');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('show');
+  deleteTargetId = null;
+}
+
+function confirmDelete() {
+  if (deleteTargetId) removeActivity(deleteTargetId);
+  closeDeleteModal();
 }
 
 function resetAll() {
@@ -836,7 +866,7 @@ function renderCalDetail() {
       del.className = 'slot-del';
       del.title = '删除';
       del.textContent = '×';
-      del.addEventListener('click', (e) => { e.stopPropagation(); removeActivity(a.id); });
+      del.addEventListener('click', (e) => { e.stopPropagation(); openDeleteModal(a.id, `${childName} · ${a.title}`); });
 
       row.appendChild(t);
       row.appendChild(c);
