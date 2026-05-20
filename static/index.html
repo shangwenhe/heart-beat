@@ -396,6 +396,47 @@
     margin-top: 16px;
   }
 
+  /* Rename Modal */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(17, 24, 39, 0.5);
+    align-items: center; justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    width: 360px;
+    max-width: 90vw;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+  }
+  .modal h3 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .rename-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .rename-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249,115,22,0.18); }
+  .modal-footer {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
   /* Toast */
   .toast {
     position: fixed;
@@ -481,6 +522,17 @@
 </section>
 
 <p class="hint">点日期看当日安排 · 在右侧添加活动</p>
+
+<div class="modal-bg" id="renameModal">
+  <div class="modal">
+    <h3 id="renameModalTitle">修改名字</h3>
+    <input type="text" id="renameInput" class="rename-input" placeholder="输入新名字">
+    <div class="modal-footer">
+      <button onclick="closeRenameModal()">取消</button>
+      <button class="primary" onclick="confirmRename()">确定</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -905,29 +957,44 @@ document.addEventListener('click', e => {
   });
 });
 
-// Chip click to rename
-document.getElementById('chip-a').addEventListener('click', () => {
-  const n = prompt('修改名字', state.names.a);
-  if (n && n.trim() && state.children.length > 0) {
-    state.names.a = n.trim();
-    fetch(`/api/children/${state.children[0].id}`, {
+// Chip click to rename (modal)
+let renameTarget = null; // 'a' or 'b'
+
+function openRenameModal(who) {
+  renameTarget = who;
+  const input = document.getElementById('renameInput');
+  input.value = state.names[who];
+  document.getElementById('renameModalTitle').textContent = `修改${state.names[who]}的名字`;
+  document.getElementById('renameModal').classList.add('show');
+  setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+
+function closeRenameModal() {
+  document.getElementById('renameModal').classList.remove('show');
+  renameTarget = null;
+}
+
+function confirmRename() {
+  const n = document.getElementById('renameInput').value.trim();
+  if (!n || !renameTarget) return;
+  const idx = renameTarget === 'a' ? 0 : 1;
+  if (state.children[idx]) {
+    state.names[renameTarget] = n;
+    fetch(`/api/children/${state.children[idx].id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: n.trim(), color: state.children[0].color })
-    }).then(() => loadData());
+      body: JSON.stringify({ name: n, color: state.children[idx].color })
+    }).then(() => { closeRenameModal(); loadData(); });
   }
+}
+
+document.getElementById('renameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); confirmRename(); }
+  if (e.key === 'Escape') closeRenameModal();
 });
-document.getElementById('chip-b').addEventListener('click', () => {
-  const n = prompt('修改名字', state.names.b);
-  if (n && n.trim() && state.children.length > 1) {
-    state.names.b = n.trim();
-    fetch(`/api/children/${state.children[1].id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: n.trim(), color: state.children[1].color })
-    }).then(() => loadData());
-  }
-});
+
+document.getElementById('chip-a').addEventListener('click', () => openRenameModal('a'));
+document.getElementById('chip-b').addEventListener('click', () => openRenameModal('b'));
 
 loadData();
 </script>
