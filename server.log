@@ -1,0 +1,42 @@
+2026/05/20 11:23:42 课程表服务启动: http://localhost:8080
+[GIN] 2026/05/20 - 11:23:44 | 200 |     328.708µs |             ::1 | GET      "/api/activities"
+[GIN] 2026/05/20 - 11:23:50 | 201 |     926.292µs |             ::1 | POST     "/api/activities"
+[GIN] 2026/05/20 - 11:24:19 | 200 |    3.991083ms |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:24:19 | 404 |         917ns |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:24:19 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:24:19 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:24:19 | 200 |     718.292µs |             ::1 | GET      "/api/schedule"
+[GIN] 2026/05/20 - 11:24:20 | 304 |      91.417µs |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:24:20 | 404 |         542ns |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:24:20 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:24:20 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:24:20 | 200 |     508.125µs |             ::1 | GET      "/api/schedule"
+[GIN] 2026/05/20 - 11:24:20 | 304 |      71.833µs |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:24:20 | 404 |         875ns |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:24:20 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:24:20 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:24:20 | 200 |     332.417µs |             ::1 | GET      "/api/schedule"
+[GIN] 2026/05/20 - 11:24:20 | 304 |      58.042µs |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:24:20 | 404 |         667ns |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:24:20 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:24:20 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:24:20 | 200 |     308.917µs |             ::1 | GET      "/api/schedule"
+[GIN] 2026/05/20 - 11:26:48 | 304 |      89.209µs |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:26:48 | 404 |         750ns |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:26:48 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:26:48 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:26:48 | 200 |    1.583042ms |             ::1 | GET      "/api/schedule"
+[GIN] 2026/05/20 - 11:26:49 | 304 |      86.625µs |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:26:49 | 404 |         625ns |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:26:49 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:26:49 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:26:49 | 200 |     517.209µs |             ::1 | GET      "/api/schedule"
+[GIN] 2026/05/20 - 11:26:49 | 304 |      86.042µs |             ::1 | GET      "/"
+[GIN] 2026/05/20 - 11:26:50 | 404 |       1.083µs |             ::1 | GET      "/.well-known/appspecific/com.chrome.devtools.json"
+2026/05/20 11:26:50 [GET /api/schedule] 请求课程表数据
+2026/05/20 11:26:50 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 11:26:50 | 200 |     415.833µs |             ::1 | GET      "/api/schedule"
+2026/05/20 13:22:45 [GET /api/schedule] 请求课程表数据
+2026/05/20 13:22:45 [GET /api/schedule] 成功: children=2, subjects=8, items=0, activities=1
+[GIN] 2026/05/20 - 13:22:45 | 200 |      7.8075ms |             ::1 | GET      "/api/schedule"
+signal: terminated

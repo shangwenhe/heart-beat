@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭课程表</title>
+<style>
+  :root {
+    --c-a: #f472b6;   /* 姐姐：亮玫瑰 */
+    --c-b: #38bdf8;   /* 妹妹：亮天蓝 */
+    --c-both: #fbbf24;/* 共同：阳光黄 */
+    --bg: #fff8f0;    /* 暖奶油 */
+    --card: #ffffff;
+    --border: #fde7d3;
+    --text: #1f2937;
+    --muted: #a08b78;
+    --accent: #f97316;
+    --selected: #ea580c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(circle at 0% 0%, #ffe4e6 0%, transparent 40%),
+      radial-gradient(circle at 100% 0%, #dbeafe 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, #fef3c7 0%, transparent 40%),
+      var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    padding: 24px;
+    min-height: 100vh;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0;
+    flex: 1;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #f472b6 0%, #f97316 50%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip:hover { background: #f3f4f6; }
+  .swatch {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.7), 0 1px 2px rgba(0,0,0,0.1);
+  }
+  button {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  button:hover { background: #f3f4f6; border-color: #d1d5db; }
+  button.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  button.primary:hover { background: #ea580c; border-color: #ea580c; }
+
+  /* Calendar (inline) */
+  .calendar-section {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 16px;
+  }
+  .cal-panel {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 14px rgba(244, 114, 182, 0.08), 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .cal-detail-panel {
+    background: transparent;
+    border-radius: 16px;
+    padding: 16px 18px;
+    overflow-y: auto;
+  }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cal-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .cal-header button.cal-nav {
+    width: 30px; height: 30px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .cal-weekdays span {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 2px 0;
+  }
+  .cal-weekdays span.we { color: #f97316; }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    position: relative;
+    user-select: none;
+    transition: background 0.1s;
+  }
+  .cal-cell:hover { background: #f3f4f6; }
+  .cal-cell.muted { color: #d1d5db; }
+  .cal-cell.weekend { color: #f97316; }
+  .cal-cell.today {
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+    color: #78350f;
+    font-weight: 700;
+  }
+  .cal-cell.selected {
+    background: linear-gradient(135deg, var(--selected) 0%, #db2777 100%);
+    color: white;
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);
+  }
+  .cal-cell.selected.weekend { color: #fed7aa; }
+  .cal-cell .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: #ef4444;
+    margin-top: 2px;
+  }
+  .cal-cell.selected .dot { background: white; }
+
+  .cal-detail-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 12px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cal-detail-title .badge {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: normal;
+    margin-left: 6px;
+  }
+  .entry {
+    display: block;
+    padding: 4px 10px;
+    margin: 3px 0;
+    border-radius: 999px;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .entry.a { background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%); }
+  .entry.b { background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); }
+  .entry.both { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #78350f; }
+  .cal-slot {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+    align-items: flex-start;
+  }
+  .cal-slot:last-child { border-bottom: none; }
+  .cal-slot-clickable { cursor: pointer; border-radius: 6px; padding-left: 6px; padding-right: 6px; margin: 0 -6px; }
+  .cal-slot-clickable:hover { background: #f9fafb; }
+  .cal-slot-time {
+    flex: 0 0 90px;
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 3px;
+  }
+  .cal-slot-entries {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .cal-slot-entries .entry { margin: 0; }
+  .slot-del {
+    flex: 0 0 auto;
+    width: 22px; height: 22px;
+    padding: 0;
+    border-radius: 4px;
+    line-height: 1;
+    font-size: 14px;
+    color: #9ca3af;
+    border: 1px solid transparent;
+    background: transparent;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .cal-slot:hover .slot-del { opacity: 1; }
+  .slot-del:hover { color: #ef4444; border-color: #fecaca; background: #fef2f2; }
+  .empty-hint {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .add-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    align-items: center;
+  }
+  .add-form input, .add-form select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: white;
+  }
+  .af-who { flex: 0 0 88px; cursor: pointer; }
+  .af-text { flex: 1; min-width: 120px; }
+  .af-add { flex: 0 0 auto; }
+
+  /* Custom time picker */
+  .time-picker { position: relative; flex: 0 0 auto; }
+  .tp-trigger {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: white;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    min-width: 96px;
+    text-align: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .tp-trigger:hover { border-color: var(--accent); }
+  .tp-trigger:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18); }
+  .tp-trigger.empty { color: var(--muted); }
+  .tp-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    padding: 8px 8px 32px;
+    display: flex;
+    z-index: 50;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .tp-popover[hidden] { display: none; }
+  .tp-col { display: flex; flex-direction: column; min-width: 60px; }
+  .tp-col-head {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 2px 0 6px;
+    font-weight: 600;
+  }
+  .tp-list {
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .tp-list::-webkit-scrollbar { width: 6px; }
+  .tp-list::-webkit-scrollbar-thumb { background: #e5d3b8; border-radius: 3px; }
+  .tp-item {
+    padding: 5px 14px;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 5px;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  .tp-item:hover { background: #fff1e0; }
+  .tp-item.active {
+    background: var(--accent);
+    color: white;
+    font-weight: 600;
+  }
+  .tp-sep {
+    align-self: center;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 0 2px;
+  }
+  .tp-clear {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 4px;
+  }
+  .tp-clear:hover { color: var(--accent); background: #fff1e0; }
+
+  .hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 16px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1F2937;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 2000;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .calendar-section { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    body { padding: 12px; }
+    header { gap: 6px; margin-bottom: 14px; }
+    h1 { font-size: 18px; flex-basis: 100%; }
+    .chip, button { font-size: 12px; padding: 5px 10px; }
+    .hint { font-size: 11px; padding: 0 8px; }
+    .cal-panel, .cal-detail-panel { padding: 12px 14px; }
+  }
+  @media (max-width: 480px) {
+    .af-text { flex-basis: 100%; order: 3; }
+  }
+  @media (hover: none) {
+    .slot-del { opacity: 0.6; }
+  }
+
+  /* Print */
+  @media print {
+    body { padding: 0; background: white; }
+    header, .hint { display: none; }
+    .calendar-section { display: block; box-shadow: none; }
+    .cal-panel, .cal-detail-panel { box-shadow: none; border: 1px solid var(--border); page-break-inside: avoid; }
+    .cal-panel { margin-bottom: 10px; }
+    @page { size: A4 portrait; margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>家庭课程表</h1>
+  <span class="chip" id="chip-a" title="点击改名">
+    <span class="swatch" style="background:var(--c-a)"></span>
+    <span id="name-a">姐姐</span>
+  </span>
+  <span class="chip" id="chip-b" title="点击改名">
+    <span class="swatch" style="background:var(--c-b)"></span>
+    <span id="name-b">妹妹</span>
+  </span>
+  <span class="chip" style="cursor:default">
+    <span class="swatch" style="background:var(--c-both)"></span>共同
+  </span>
+  <button onclick="resetAll()">重置</button>
+  <button class="primary" onclick="window.print()">打印</button>
+</header>
+
+<section class="calendar-section">
+  <div class="cal-panel">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calShift(-1)" aria-label="上个月">‹</button>
+      <h3 id="cal-title">—</h3>
+      <div style="display:flex;gap:6px;">
+        <button onclick="calToday()" style="font-size:12px;padding:4px 10px;">今天</button>
+        <button class="cal-nav" onclick="calShift(1)" aria-label="下个月">›</button>
+      </div>
+    </div>
+    <div class="cal-weekdays">
+      <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span>
+      <span class="we">六</span><span class="we">日</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div class="cal-detail-panel" id="cal-detail"></div>
+</section>
+
+<p class="hint">点日期看当日安排 · 在右侧添加活动</p>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WEEKDAY_KEY = ['sun','mon','tue','wed','thu','fri','sat'];
+const DAY_LABELS = { mon:'周一', tue:'周二', wed:'周三', thu:'周四', fri:'周五', sat:'周六', sun:'周日' };
+const DAY_KEY_TO_DOW = { mon:1, tue:2, wed:3, thu:4, fri:5, sat:6, sun:0 };
+
+let state = {
+  children: [],
+  activities: [],
+  names: { a: '姐姐', b: '妹妹' }
+};
+
+// Map childId -> 'a' or 'b'
+let childMap = {};
+
+let calCursor = new Date();
+let calSelected = new Date();
+
+// ---- API ----
+async function loadData() {
+  try {
+    const res = await fetch('/api/schedule');
+    const data = await res.json();
+    state.children = data.children || [];
+    state.activities = data.activities || [];
+    // Build child map
+    childMap = {};
+    if (state.children.length >= 1) {
+      childMap[state.children[0].id] = 'a';
+      state.names.a = state.children[0].name;
+    }
+    if (state.children.length >= 2) {
+      childMap[state.children[1].id] = 'b';
+      state.names.b = state.children[1].name;
+    }
+    render();
+  } catch (e) {
+    showToast('加载失败: ' + e.message);
+  }
+}
+
+function whoClass(childId) {
+  return childMap[childId] || 'a';
+}
+
+async function addActivity(dayKey, time, who, text) {
+  // Map who back to child ID
+  let childId;
+  if (who === 'both') {
+    // For 'both', use first child ID (activities are per-child, we add for first)
+    childId = state.children.length > 0 ? state.children[0].id : 1;
+  } else {
+    const idx = who === 'a' ? 0 : 1;
+    childId = state.children[idx] ? state.children[idx].id : 1;
+  }
+
+  const selectedDate = calSelected;
+  const [h, m] = (time || '09:00').split(':').map(Number);
+  const start = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), h || 0, m || 0);
+  const end = new Date(start.getTime() + 60 * 60 * 1000); // default 1 hour
+
+  const data = {
+    title: text,
+    content: '',
+    startTime: formatDateTimeLocal(start),
+    endTime: formatDateTimeLocal(end),
+    childId: childId
+  };
+
+  try {
+    const res = await fetch('/api/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    showToast('添加成功');
+    loadData();
+  } catch (e) {
+    showToast('添加失败: ' + e.message);
+  }
+}
+
+async function removeActivity(id) {
+  try {
+    const res = await fetch(`/api/activities/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(await res.text());
+    showToast('已删除');
+    loadData();
+  } catch (e) {
+    showToast('删除失败: ' + e.message);
+  }
+}
+
+function resetAll() {
+  if (!confirm('确定要清空所有活动？')) return;
+  // Delete all activities one by one
+  Promise.all(state.activities.map(a => fetch(`/api/activities/${a.id}`, { method: 'DELETE' })))
+    .then(() => { showToast('已重置'); loadData(); })
+    .catch(e => showToast('重置失败: ' + e.message));
+}
+
+// ---- Calendar ----
+function calShift(n) {
+  calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth() + n, 1);
+  renderCalendar();
+}
+
+function calToday() {
+  calCursor = new Date();
+  calSelected = new Date();
+  renderCalendar();
+}
+
+function sameDate(a, b) {
+  return a.getFullYear() === b.getFullYear()
+      && a.getMonth() === b.getMonth()
+      && a.getDate() === b.getDate();
+}
+
+function getActivitiesForDate(date) {
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  return state.activities.filter(a => a.startTime && a.startTime.startsWith(dateStr));
+}
+
+function dateHasActivity(date) {
+  return getActivitiesForDate(date).length > 0;
+}
+
+function render() {
+  document.getElementById('name-a').textContent = state.names.a;
+  document.getElementById('name-b').textContent = state.names.b;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = calCursor.getFullYear();
+  const month = calCursor.getMonth();
+  document.getElementById('cal-title').textContent = `${year} 年 ${month + 1} 月`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // Monday-first: JS getDay() Sun=0..Sat=6 -> offset
+  const firstDow = new Date(year, month, 1).getDay();
+  const startOffset = (firstDow + 6) % 7;
+  const prevLast = new Date(year, month, 0).getDate();
+  const thisLast = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+
+  const cells = [];
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells.push({ d: prevLast - i, muted: true, date: new Date(year, month - 1, prevLast - i) });
+  }
+  for (let d = 1; d <= thisLast; d++) {
+    cells.push({ d, muted: false, date: new Date(year, month, d) });
+  }
+  while (cells.length % 7 !== 0) {
+    const d = cells.length - startOffset - thisLast + 1;
+    cells.push({ d, muted: true, date: new Date(year, month + 1, d) });
+  }
+
+  cells.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'cal-cell';
+    if (c.muted) el.classList.add('muted');
+    const dow = c.date.getDay();
+    if (dow === 0 || dow === 6) el.classList.add('weekend');
+    if (sameDate(c.date, today)) el.classList.add('today');
+    if (sameDate(c.date, calSelected)) el.classList.add('selected');
+
+    const num = document.createElement('span');
+    num.textContent = c.d;
+    el.appendChild(num);
+
+    if (!c.muted && dateHasActivity(c.date)) {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      el.appendChild(dot);
+    }
+
+    el.addEventListener('click', () => {
+      calSelected = c.date;
+      if (c.muted) {
+        calCursor = new Date(c.date.getFullYear(), c.date.getMonth(), 1);
+      }
+      renderCalendar();
+    });
+    grid.appendChild(el);
+  });
+
+  renderCalDetail();
+}
+
+function renderCalDetail() {
+  const detail = document.getElementById('cal-detail');
+  detail.innerHTML = '';
+  const d = calSelected;
+  const dow = d.getDay();
+  const dayKey = WEEKDAY_KEY[dow];
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  const title = document.createElement('div');
+  title.className = 'cal-detail-title';
+  title.innerHTML = `${dateStr} · ${DAY_LABELS[dayKey]} <span class="badge">点击×可删除</span>`;
+  detail.appendChild(title);
+
+  const list = getActivitiesForDate(d);
+  if (!list.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-hint';
+    empty.style.cssText = 'text-align:left;padding:6px 0;margin:0 0 4px;';
+    empty.textContent = '这一天还没有活动';
+    detail.appendChild(empty);
+  } else {
+    // Sort by start time
+    list.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    list.forEach(a => {
+      const row = document.createElement('div');
+      row.className = 'cal-slot';
+
+      const t = document.createElement('div');
+      t.className = 'cal-slot-time';
+      const start = new Date(a.startTime);
+      t.textContent = `${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}`;
+
+      const c = document.createElement('div');
+      c.className = 'cal-slot-entries';
+      const span = document.createElement('span');
+      span.className = `entry ${whoClass(a.childId)}`;
+      span.textContent = a.title;
+      c.appendChild(span);
+
+      const del = document.createElement('button');
+      del.className = 'slot-del';
+      del.title = '删除';
+      del.textContent = '×';
+      del.addEventListener('click', (e) => { e.stopPropagation(); removeActivity(a.id); });
+
+      row.appendChild(t);
+      row.appendChild(c);
+      row.appendChild(del);
+      detail.appendChild(row);
+    });
+  }
+
+  const form = document.createElement('div');
+  form.className = 'add-form';
+  detail.appendChild(form);
+
+  const picker = createTimePicker();
+  form.appendChild(picker.el);
+
+  const whoInput = document.createElement('select');
+  whoInput.className = 'af-who';
+  whoInput.innerHTML = `
+    <option value="a">${state.names.a}</option>
+    <option value="b">${state.names.b}</option>
+    <option value="both">共同</option>`;
+  form.appendChild(whoInput);
+
+  const textInput = document.createElement('input');
+  textInput.type = 'text';
+  textInput.className = 'af-text';
+  textInput.placeholder = '活动内容，如：数学 / 钢琴课';
+  form.appendChild(textInput);
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'primary af-add';
+  addBtn.textContent = '+ 添加';
+  form.appendChild(addBtn);
+
+  function doAdd() {
+    const text = textInput.value.trim();
+    if (!text) { textInput.focus(); return; }
+    addActivity(dayKey, picker.getValue(), whoInput.value, text);
+  }
+  addBtn.addEventListener('click', doAdd);
+  textInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); doAdd(); }
+  });
+}
+
+// ---- Time Picker ----
+function createTimePicker(initial) {
+  const wrap = document.createElement('div');
+  wrap.className = 'time-picker';
+  let hour = '', minute = '';
+  if (initial && /^\d{2}:\d{2}$/.test(initial)) [hour, minute] = initial.split(':');
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'tp-trigger';
+
+  const popover = document.createElement('div');
+  popover.className = 'tp-popover';
+  popover.hidden = true;
+
+  function makeCol(label, items, current, onPick) {
+    const col = document.createElement('div');
+    col.className = 'tp-col';
+    const head = document.createElement('div');
+    head.className = 'tp-col-head';
+    head.textContent = label;
+    col.appendChild(head);
+    const list = document.createElement('div');
+    list.className = 'tp-list';
+    items.forEach(v => {
+      const item = document.createElement('div');
+      item.className = 'tp-item';
+      if (v === current) item.classList.add('active');
+      item.textContent = v;
+      item.addEventListener('click', () => onPick(v));
+      list.appendChild(item);
+    });
+    col.appendChild(list);
+    return col;
+  }
+
+  function scrollActiveIntoView() {
+    popover.querySelectorAll('.tp-item.active').forEach(el => {
+      const parent = el.parentElement;
+      parent.scrollTop = el.offsetTop - parent.clientHeight / 2 + el.clientHeight / 2;
+    });
+  }
+
+  function render() {
+    if (hour && minute) {
+      trigger.textContent = `${hour}:${minute}`;
+      trigger.classList.remove('empty');
+    } else {
+      trigger.textContent = '选择时间';
+      trigger.classList.add('empty');
+    }
+    popover.innerHTML = '';
+    const hours = Array.from({length: 24}, (_, i) => String(i).padStart(2,'0'));
+    const mins = Array.from({length: 12}, (_, i) => String(i*5).padStart(2,'0'));
+    popover.appendChild(makeCol('时', hours, hour, v => { hour = v; render(); scrollActiveIntoView(); }));
+    const sep = document.createElement('div');
+    sep.className = 'tp-sep';
+    sep.textContent = ':';
+    popover.appendChild(sep);
+    popover.appendChild(makeCol('分', mins, minute, v => { minute = v; render(); scrollActiveIntoView(); }));
+
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'tp-clear';
+    clear.textContent = '清除';
+    clear.addEventListener('click', () => { hour = ''; minute = ''; render(); });
+    popover.appendChild(clear);
+  }
+
+  trigger.addEventListener('click', e => {
+    e.stopPropagation();
+    popover.hidden = !popover.hidden;
+    if (!popover.hidden) scrollActiveIntoView();
+  });
+
+  wrap.appendChild(trigger);
+  wrap.appendChild(popover);
+  render();
+
+  return {
+    el: wrap,
+    getValue: () => (hour && minute) ? `${hour}:${minute}` : ''
+  };
+}
+
+function formatDateTimeLocal(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}T${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Close any open time-picker popover on outside click
+document.addEventListener('click', e => {
+  document.querySelectorAll('.tp-popover:not([hidden])').forEach(po => {
+    const wrap = po.closest('.time-picker');
+    if (wrap && !wrap.contains(e.target)) po.hidden = true;
+  });
+});
+
+// Chip click to rename
+document.getElementById('chip-a').addEventListener('click', () => {
+  const n = prompt('修改名字', state.names.a);
+  if (n && n.trim() && state.children.length > 0) {
+    state.names.a = n.trim();
+    fetch(`/api/children/${state.children[0].id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: n.trim(), color: state.children[0].color })
+    }).then(() => loadData());
+  }
+});
+document.getElementById('chip-b').addEventListener('click', () => {
+  const n = prompt('修改名字', state.names.b);
+  if (n && n.trim() && state.children.length > 1) {
+    state.names.b = n.trim();
+    fetch(`/api/children/${state.children[1].id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: n.trim(), color: state.children[1].color })
+    }).then(() => loadData());
+  }
+});
+
+loadData();
+</script>
+</body>
+</html>
