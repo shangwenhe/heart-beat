@@ -354,6 +354,20 @@
     border-radius: 4px;
   }
   .tp-clear:hover { color: var(--accent); background: #fff1e0; }
+  .tp-confirm {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 11px;
+    color: white;
+    cursor: pointer;
+    background: var(--accent);
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .tp-confirm:hover { background: #ea580c; }
 
   .hint {
     text-align: center;
@@ -800,6 +814,13 @@ function createTimePicker(initial) {
     clear.textContent = '清除';
     clear.addEventListener('click', () => { hour = ''; minute = ''; render(); });
     popover.appendChild(clear);
+
+    const confirm = document.createElement('button');
+    confirm.type = 'button';
+    confirm.className = 'tp-confirm';
+    confirm.textContent = '确认';
+    confirm.addEventListener('click', () => { popover.hidden = true; });
+    popover.appendChild(confirm);
   }
 
   trigger.addEventListener('click', e => {
