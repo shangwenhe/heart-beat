@@ -776,7 +776,7 @@ function createTimePicker(initial) {
       item.className = 'tp-item';
       if (v === current) item.classList.add('active');
       item.textContent = v;
-      item.addEventListener('click', () => onPick(v));
+      item.addEventListener('click', e => { e.stopPropagation(); onPick(v); });
       list.appendChild(item);
     });
     col.appendChild(list);
