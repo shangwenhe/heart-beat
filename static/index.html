@@ -230,6 +230,15 @@
     gap: 4px;
   }
   .cal-slot-entries .entry { margin: 0; }
+  .recurring-tag {
+    font-size: 10px;
+    color: var(--accent);
+    background: #fff7ed;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid #fed7aa;
+    white-space: nowrap;
+  }
   .slot-del {
     flex: 0 0 auto;
     width: 22px; height: 22px;
@@ -267,6 +276,17 @@
     background: white;
   }
   .af-who { flex: 0 0 88px; cursor: pointer; }
+  .af-recurring {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .af-recurring input { cursor: pointer; accent-color: var(--accent); }
   .af-text { flex: 1; min-width: 120px; }
   .af-add { flex: 0 0 auto; }
 
@@ -313,7 +333,7 @@
     font-weight: 600;
   }
   .tp-list {
-    max-height: 180px;
+    max-height: 120px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -529,7 +549,8 @@ async function addActivity(dayKey, time, who, text) {
     content: '',
     startTime: formatDateTimeLocal(start),
     endTime: formatDateTimeLocal(end),
-    childId: childId
+    childId: childId,
+    isRecurring: recurringInput.checked
   };
 
   try {
@@ -585,7 +606,16 @@ function sameDate(a, b) {
 
 function getActivitiesForDate(date) {
   const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-  return state.activities.filter(a => a.startTime && a.startTime.startsWith(dateStr));
+  const dow = date.getDay();
+  return state.activities.filter(a => {
+    if (a.isRecurring) {
+      // 每周重复：匹配星期几
+      const aDow = new Date(a.startTime).getDay();
+      return aDow === dow;
+    }
+    // 一次性：匹配确切日期
+    return a.startTime && a.startTime.startsWith(dateStr);
+  });
 }
 
 function dateHasActivity(date) {
@@ -695,6 +725,12 @@ function renderCalDetail() {
       span.className = `entry ${whoClass(a.childId)}`;
       span.textContent = a.title;
       c.appendChild(span);
+      if (a.isRecurring) {
+        const tag = document.createElement('span');
+        tag.className = 'recurring-tag';
+        tag.textContent = '每周';
+        c.appendChild(tag);
+      }
 
       const del = document.createElement('button');
       del.className = 'slot-del';
@@ -715,6 +751,17 @@ function renderCalDetail() {
 
   const picker = createTimePicker();
   form.appendChild(picker.el);
+
+  const recurringLabel = document.createElement('label');
+  recurringLabel.className = 'af-recurring';
+  const recurringInput = document.createElement('input');
+  recurringInput.type = 'checkbox';
+  recurringInput.checked = true;
+  recurringInput.id = 'af-recurring-chk';
+  const recurringText = document.createTextNode('每周');
+  recurringLabel.appendChild(recurringInput);
+  recurringLabel.appendChild(recurringText);
+  form.appendChild(recurringLabel);
 
   const whoInput = document.createElement('select');
   whoInput.className = 'af-who';

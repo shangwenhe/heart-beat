@@ -58,6 +58,7 @@ func createTables() error {
 			start_time DATETIME NOT NULL,
 			end_time DATETIME NOT NULL,
 			child_id INTEGER REFERENCES children(id),
+			is_recurring BOOLEAN DEFAULT 1,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 	}
@@ -67,6 +68,8 @@ func createTables() error {
 			return err
 		}
 	}
+	// 迁移：已有 activities 表补 is_recurring 列
+	db.Exec("ALTER TABLE activities ADD COLUMN is_recurring BOOLEAN DEFAULT 1")
 	return nil
 }
 
@@ -259,7 +262,7 @@ func SwapScheduleItems(id1, id2 int64) error {
 
 // Activities CRUD
 func GetActivities() ([]Activity, error) {
-	query := `SELECT a.id, a.title, a.content, a.start_time, a.end_time, a.child_id, a.created_at,
+	query := `SELECT a.id, a.title, a.content, a.start_time, a.end_time, a.child_id, a.is_recurring, a.created_at,
 		c.id, c.name, c.color
 		FROM activities a
 		LEFT JOIN children c ON a.child_id = c.id
@@ -278,7 +281,7 @@ func GetActivities() ([]Activity, error) {
 		var childColor sql.NullString
 
 		if err := rows.Scan(
-			&a.ID, &a.Title, &a.Content, &a.StartTime, &a.EndTime, &a.ChildID, &a.CreatedAt,
+			&a.ID, &a.Title, &a.Content, &a.StartTime, &a.EndTime, &a.ChildID, &a.IsRecurring, &a.CreatedAt,
 			&child.ID, &child.Name, &childColor,
 		); err != nil {
 			return nil, err
@@ -293,10 +296,10 @@ func GetActivities() ([]Activity, error) {
 	return activities, nil
 }
 
-func CreateActivity(title, content string, startTime, endTime time.Time, childID int64) (*Activity, error) {
+func CreateActivity(title, content string, startTime, endTime time.Time, childID int64, isRecurring bool) (*Activity, error) {
 	result, err := db.Exec(
-		"INSERT INTO activities (title, content, start_time, end_time, child_id) VALUES (?, ?, ?, ?, ?)",
-		title, content, startTime, endTime, childID,
+		"INSERT INTO activities (title, content, start_time, end_time, child_id, is_recurring) VALUES (?, ?, ?, ?, ?, ?)",
+		title, content, startTime, endTime, childID, isRecurring,
 	)
 	if err != nil {
 		return nil, err
@@ -305,14 +308,14 @@ func CreateActivity(title, content string, startTime, endTime time.Time, childID
 	return &Activity{
 		ID: id, Title: title, Content: content,
 		StartTime: startTime, EndTime: endTime, ChildID: childID,
-		CreatedAt: time.Now(),
+		IsRecurring: isRecurring, CreatedAt: time.Now(),
 	}, nil
 }
 
-func UpdateActivity(id int64, title, content string, startTime, endTime time.Time, childID int64) error {
+func UpdateActivity(id int64, title, content string, startTime, endTime time.Time, childID int64, isRecurring bool) error {
 	_, err := db.Exec(
-		"UPDATE activities SET title=?, content=?, start_time=?, end_time=?, child_id=? WHERE id=?",
-		title, content, startTime, endTime, childID, id,
+		"UPDATE activities SET title=?, content=?, start_time=?, end_time=?, child_id=?, is_recurring=? WHERE id=?",
+		title, content, startTime, endTime, childID, isRecurring, id,
 	)
 	return err
 }

@@ -229,19 +229,24 @@ func main() {
 
 	r.POST("/api/activities", func(c *gin.Context) {
 		var req struct {
-			Title     string `json:"title" binding:"required"`
-			Content   string `json:"content"`
-			StartTime string `json:"startTime" binding:"required"`
-			EndTime   string `json:"endTime" binding:"required"`
-			ChildID   int64  `json:"childId" binding:"required"`
+			Title       string `json:"title" binding:"required"`
+			Content     string `json:"content"`
+			StartTime   string `json:"startTime" binding:"required"`
+			EndTime     string `json:"endTime" binding:"required"`
+			ChildID     int64  `json:"childId" binding:"required"`
+			IsRecurring *bool  `json:"isRecurring"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		startTime, _ := time.Parse("2006-01-02T15:04", req.StartTime)
-		endTime, _ := time.Parse("2006-01-02T15:04", req.EndTime)
-		activity, err := CreateActivity(req.Title, req.Content, startTime, endTime, req.ChildID)
+		isRecurring := true
+		if req.IsRecurring != nil {
+			isRecurring = *req.IsRecurring
+		}
+		startTime, _ := time.ParseInLocation("2006-01-02T15:04", req.StartTime, time.Local)
+		endTime, _ := time.ParseInLocation("2006-01-02T15:04", req.EndTime, time.Local)
+		activity, err := CreateActivity(req.Title, req.Content, startTime, endTime, req.ChildID, isRecurring)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -252,19 +257,24 @@ func main() {
 	r.PUT("/api/activities/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		var req struct {
-			Title     string `json:"title" binding:"required"`
-			Content   string `json:"content"`
-			StartTime string `json:"startTime" binding:"required"`
-			EndTime   string `json:"endTime" binding:"required"`
-			ChildID   int64  `json:"childId" binding:"required"`
+			Title       string `json:"title" binding:"required"`
+			Content     string `json:"content"`
+			StartTime   string `json:"startTime" binding:"required"`
+			EndTime     string `json:"endTime" binding:"required"`
+			ChildID     int64  `json:"childId" binding:"required"`
+			IsRecurring *bool  `json:"isRecurring"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		startTime, _ := time.Parse("2006-01-02T15:04", req.StartTime)
-		endTime, _ := time.Parse("2006-01-02T15:04", req.EndTime)
-		if err := UpdateActivity(int64(mustInt(id)), req.Title, req.Content, startTime, endTime, req.ChildID); err != nil {
+		isRecurring := true
+		if req.IsRecurring != nil {
+			isRecurring = *req.IsRecurring
+		}
+		startTime, _ := time.ParseInLocation("2006-01-02T15:04", req.StartTime, time.Local)
+		endTime, _ := time.ParseInLocation("2006-01-02T15:04", req.EndTime, time.Local)
+		if err := UpdateActivity(int64(mustInt(id)), req.Title, req.Content, startTime, endTime, req.ChildID, isRecurring); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

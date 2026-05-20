@@ -32,14 +32,15 @@ type ScheduleItem struct {
 
 // 日程/活动
 type Activity struct {
-	ID        int64     `json:"id"`
-	Title     string    `json:"title"`      // 日程标题
-	Content   string    `json:"content"`     // 日程内容
-	StartTime time.Time `json:"startTime"`   // 开始时间
-	EndTime   time.Time `json:"endTime"`     // 结束时间
-	ChildID   int64     `json:"childId"`     // 归属孩子
-	CreatedAt time.Time `json:"createdAt,omitempty"`
-	Child     *Child    `json:"child,omitempty"`
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`       // 日程标题
+	Content     string    `json:"content"`     // 日程内容
+	StartTime   time.Time `json:"startTime"`   // 开始时间
+	EndTime     time.Time `json:"endTime"`     // 结束时间
+	ChildID     int64     `json:"childId"`     // 归属孩子
+	IsRecurring bool      `json:"isRecurring"` // 是否每周重复
+	CreatedAt   time.Time `json:"createdAt,omitempty"`
+	Child       *Child    `json:"child,omitempty"`
 }
 
 type SwapRequest struct {
