@@ -170,13 +170,17 @@
     box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);
   }
   .cal-cell.selected.weekend { color: #fed7aa; }
-  .cal-cell .dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: #ef4444;
+  .cal-cell .dots {
+    display: flex; gap: 3px; justify-content: center;
     margin-top: 2px;
   }
-  .cal-cell.selected .dot { background: white; }
+  .cal-cell .dots .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+  .cal-cell .dots .dot.a { background: var(--c-a); }
+  .cal-cell .dots .dot.b { background: var(--c-b); }
+  .cal-cell.selected .dots .dot { background: white; }
 
   .cal-detail-title {
     font-size: 14px;
@@ -748,8 +752,10 @@ function getActivitiesForDate(date) {
   });
 }
 
-function dateHasActivity(date) {
-  return getActivitiesForDate(date).length > 0;
+function dateActivityWhos(date) {
+  const acts = getActivitiesForDate(date);
+  const whos = new Set(acts.map(a => whoClass(a.childId)));
+  return [...whos];
 }
 
 function render() {
@@ -798,10 +804,18 @@ function renderCalendar() {
     num.textContent = c.d;
     el.appendChild(num);
 
-    if (!c.muted && dateHasActivity(c.date)) {
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      el.appendChild(dot);
+    if (!c.muted) {
+      const whos = dateActivityWhos(c.date);
+      if (whos.length > 0) {
+        const wrap = document.createElement('div');
+        wrap.className = 'dots';
+        whos.forEach(w => {
+          const dot = document.createElement('div');
+          dot.className = 'dot ' + w;
+          wrap.appendChild(dot);
+        });
+        el.appendChild(wrap);
+      }
     }
 
     el.addEventListener('click', () => {
